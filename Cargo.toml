@@ -6,8 +6,10 @@ edition = "2021"
 [dependencies]
 axum = "0.7.5"
 axum-prometheus = "0.6.1"
+dotenv = "0.15.0"
 metrics = "0.23.0"
 metrics-exporter-prometheus = "0.15.0"
+sqlx = { version = "0.7.4", features = ["runtime-tokio-rustls", "postgres"] }
 tokio = { version = "1.38.0", features = ["full"] }
 tower = "0.4.13"
 tower-http = { version = "0.5.2", features = ["trace"] }
