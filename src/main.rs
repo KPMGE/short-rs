@@ -1,3 +1,4 @@
+use axum::routing::post;
 use axum::{routing::get, Router};
 use axum_prometheus::PrometheusMetricLayer;
 use dotenv::dotenv;
@@ -32,6 +33,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .await?;
 
     let app = Router::new()
+        .route("/create", post(routes::create_link))
         .route("/:id", get(routes::redirect))
         .route("/metrics", get(|| async move { metrics_handler.render() }))
         .route("/health", get(routes::health_check))

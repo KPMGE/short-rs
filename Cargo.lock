@@ -1703,9 +1703,11 @@ version = "0.1.0"
 dependencies = [
  "axum",
  "axum-prometheus",
+ "base64 0.22.1",
  "dotenv",
  "metrics 0.23.0",
  "metrics-exporter-prometheus 0.15.0",
+ "rand",
  "serde",
  "serde_json",
  "sqlx",
@@ -1714,6 +1716,7 @@ dependencies = [
  "tower-http",
  "tracing",
  "tracing-subscriber",
+ "url",
 ]
 
 [[package]]
