@@ -34,7 +34,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let app = Router::new()
         .route("/create", post(routes::create_link))
-        .route("/:id", get(routes::redirect))
+        .route("/:id", get(routes::redirect).patch(routes::update_link))
         .route("/metrics", get(|| async move { metrics_handler.render() }))
         .route("/health", get(routes::health_check))
         .layer(TraceLayer::new_for_http())
