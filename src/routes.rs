@@ -37,6 +37,14 @@ pub struct LinkTarget {
     pub target_url: String,
 }
 
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CountedLinkStatistics {
+    amount: Option<i64>,
+    user_agent: Option<String>,
+    referer: Option<String>,
+}
+
 pub async fn create_link(
     State(pool): State<PgPool>,
     Json(new_link): Json<LinkTarget>,
@@ -178,4 +186,33 @@ pub async fn redirect(
         .header("Cache-Control", DEFAULT_CACHE_CONTROL_HEADER)
         .body(Body::empty())
         .expect("This response should always be constructable"))
+}
+
+pub async fn get_link_statistics(
+    State(pool): State<PgPool>,
+    Path(link_id): Path<String>,
+) -> Result<Json<Vec<CountedLinkStatistics>>, (StatusCode, String)> {
+    let get_statistics_timeout = tokio::time::Duration::from_millis(300);
+
+    let statistics = tokio::time::timeout(
+        get_statistics_timeout,
+        sqlx::query_as!(
+            CountedLinkStatistics,
+            r#"
+                select count(*) as amount, user_agent, referer
+                from link_statistics 
+                group by link_id, user_agent, referer
+                having link_id = $1
+            "#,
+            &link_id
+        )
+        .fetch_all(&pool),
+    )
+    .await
+    .map_err(internal_error)?
+    .map_err(internal_error)?;
+
+    tracing::debug!("link statistics requested for link_id {}", &link_id);
+
+    Ok(Json(statistics))
 }

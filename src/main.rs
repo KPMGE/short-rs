@@ -34,6 +34,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let app = Router::new()
         .route("/create", post(routes::create_link))
+        .route("/:id/statistics", get(routes::get_link_statistics))
         .route("/:id", get(routes::redirect).patch(routes::update_link))
         .route("/metrics", get(|| async move { metrics_handler.render() }))
         .route("/health", get(routes::health_check))
