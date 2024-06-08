@@ -1,7 +1,7 @@
 use axum::{
     body::Body,
     extract::{Path, State},
-    http::StatusCode,
+    http::{HeaderMap, StatusCode},
     response::{IntoResponse, Response},
     Json,
 };
@@ -115,7 +115,8 @@ pub async fn update_link(
 
 pub async fn redirect(
     State(pool): State<PgPool>,
-    Path(request_link): Path<String>,
+    Path(link_id): Path<String>,
+    headers: HeaderMap,
 ) -> Result<Response, (StatusCode, String)> {
     let select_timeout = tokio::time::Duration::from_millis(300);
 
@@ -124,7 +125,7 @@ pub async fn redirect(
         sqlx::query_as!(
             Link,
             "select id, target_url from links where id = $1",
-            request_link
+            link_id
         )
         .fetch_optional(&pool),
     )
@@ -134,7 +135,42 @@ pub async fn redirect(
     .ok_or_else(|| "Not found".to_string())
     .map_err(|err| (StatusCode::OK, err))?;
 
-    tracing::debug!("Redirect link id {} to {}", request_link, link.target_url);
+    tracing::debug!("Redirect link id {} to {}", link_id, link.target_url);
+
+    let referer = headers
+        .get("referer")
+        .map(|value| value.to_str().unwrap_or_default().to_string());
+
+    let user_agent = headers
+        .get("user-agent")
+        .map(|value| value.to_str().unwrap_or_default().to_string());
+
+    let insert_statistics_timeout = tokio::time::Duration::from_millis(300);
+    let saved_statistics = tokio::time::timeout(
+        insert_statistics_timeout,
+        sqlx::query(
+            r#"
+            insert into link_statistics values(link_is, referer, user_agent) values($1, $2, $3)
+            "#,
+        )
+        .bind(&link_id)
+        .bind(&referer)
+        .bind(&user_agent)
+        .execute(&pool),
+    )
+    .await;
+
+    match saved_statistics {
+        Err(elapsed) => tracing::error!(
+            "inserting link statistics to database resulted in a timeout {}",
+            elapsed
+        ),
+        Ok(Err(e)) => tracing::error!(
+            "inserting link statistics on database resulted in error {}",
+            e
+        ),
+        _ => tracing::debug!("link statatistics inserted correctly"),
+    }
 
     Ok(Response::builder()
         .status(StatusCode::TEMPORARY_REDIRECT)
