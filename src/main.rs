@@ -1,6 +1,7 @@
 mod auth;
 mod routes;
 mod utils;
+mod models;
 
 use axum::middleware;
 use axum::routing::{patch, post};

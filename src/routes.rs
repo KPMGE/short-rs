@@ -1,3 +1,4 @@
+use crate::models::*;
 use axum::{
     body::Body,
     extract::{Path, State},
@@ -5,8 +6,6 @@ use axum::{
     response::{IntoResponse, Response},
     Json,
 };
-use base64::{engine::general_purpose, Engine};
-use rand::Rng;
 use sqlx::PgPool;
 use url::Url;
 
@@ -15,34 +14,8 @@ use crate::utils::internal_error;
 const DEFAULT_CACHE_CONTROL_HEADER: &str =
     "public, max-age=300, s-maxage=300, stale-while-revalite=300, stale-if-error=300";
 
-fn generate_id() -> String {
-    let rand_number = rand::thread_rng().gen_range(0..u32::MAX);
-    general_purpose::URL_SAFE_NO_PAD.encode(rand_number.to_string())
-}
-
 pub async fn health_check() -> impl IntoResponse {
     (StatusCode::OK, "Service healthy")
-}
-
-#[derive(serde::Deserialize, serde::Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct Link {
-    pub id: String,
-    pub target_url: String,
-}
-
-#[derive(serde::Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct LinkTarget {
-    pub target_url: String,
-}
-
-#[derive(serde::Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct CountedLinkStatistics {
-    amount: Option<i64>,
-    user_agent: Option<String>,
-    referer: Option<String>,
 }
 
 pub async fn create_link(
@@ -53,7 +26,7 @@ pub async fn create_link(
         .map_err(|_| (StatusCode::CONFLICT, "Url malformed".into()))?
         .to_string();
 
-    let new_link_id = generate_id();
+    let new_link_id = crate::utils::generate_id();
     let insert_link_timeout = tokio::time::Duration::from_millis(300);
     let new_link = tokio::time::timeout(
         insert_link_timeout,
