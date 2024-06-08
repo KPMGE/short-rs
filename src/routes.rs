@@ -33,13 +33,13 @@ pub async fn create_link(
         sqlx::query_as!(
             Link,
             r#"
-        with inserted_link as (
-            insert into links(id, target_url)
-            values($1, $2)
-            returning id, target_url
-        )
-        select id, target_url from inserted_link
-        "#,
+                with inserted_link as (
+                    insert into links(id, target_url)
+                    values($1, $2)
+                    returning id, target_url
+                )
+                select id, target_url from inserted_link
+            "#,
             &new_link_id,
             &url,
         )
@@ -131,7 +131,8 @@ pub async fn redirect(
         insert_statistics_timeout,
         sqlx::query(
             r#"
-            insert into link_statistics values(link_is, referer, user_agent) values($1, $2, $3)
+                insert into link_statistics (link_is, referer, user_agent)
+                values($1, $2, $3)
             "#,
         )
         .bind(&link_id)
